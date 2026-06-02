@@ -1,50 +1,31 @@
-# Utiliser une image Node.js légère comme base
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS base
 
-# Install OpenSSL for Prisma
-RUN apk add --no-cache openssl
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 
-# Définir le répertoire de travail
+RUN apk add --no-cache openssl python3 make g++ && corepack enable
+
 WORKDIR /app
 
-# Copier les fichiers de dépendances
-COPY package.json pnpm-lock.yaml* ./
+FROM base AS deps
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
-# Installer pnpm
-RUN npm install -g pnpm
-
-# Installer les dépendances
-RUN pnpm install
-
-# Copier le reste des fichiers du projet
+FROM deps AS dev
 COPY . .
-
-# Générer le client Prisma
-RUN npx prisma generate
-
-# Construire l'application NestJS
-RUN pnpm run build
-
-# --- Étape de production ---
-FROM node:20-alpine AS runner
-
-# Install OpenSSL for Prisma
-RUN apk add --no-cache openssl
-
-WORKDIR /app
-
-# Installer pnpm
-RUN npm install -g pnpm
-
-# Copier les fichiers nécessaires depuis l'étape de build
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/pnpm-lock.yaml* ./
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/prisma ./prisma
-
-# Exposer le port de l'application
+RUN pnpm prisma generate
 EXPOSE 3000
+CMD ["pnpm", "run", "start:dev"]
 
-# Commande de démarrage
-CMD ["pnpm", "run", "start:prod"]
+FROM deps AS build
+COPY . .
+RUN pnpm prisma generate && pnpm run build
+
+FROM base AS prod
+ENV NODE_ENV=production
+COPY package.json pnpm-lock.yaml ./
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/prisma ./prisma
+EXPOSE 3000
+CMD ["node", "dist/main"]

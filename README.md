@@ -1,198 +1,132 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# CamerRideShare API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API backend pour l'application de covoiturage CamerRideShare, construite avec NestJS et TypeScript.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 📋 Table des matières
 
-## Description
+- [Description](#description)
+- [Technologies](#technologies)
+- [Prérequis](#prérequis)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Lancement du serveur](#lancement-du-serveur)
+- [Documentation API](#documentation-api)
+- [Structure du projet](#structure-du-projet)
+- [Tests](#tests)
+- [Déploiement](#déploiement)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 📝 Description
 
-## Project setup
+CamerRideShare est une API REST pour une application de covoiturage permettant de gérer les utilisateurs (conducteurs, investisseurs, administrateurs) avec un système d'authentification JWT sécurisé.
 
+## 🛠 Technologies
+
+- **Framework**: [NestJS](https://nestjs.com/) - Framework Node.js progressif
+- **Language**: TypeScript
+- **Authentification**: JWT (JSON Web Tokens) avec Passport
+- **Sécurité**: bcrypt pour le hachage des mots de passe
+- **Validation**: class-validator, class-transformer
+
+## 📦 Prérequis
+
+- Node.js (v18 ou supérieur)
+- pnpm (ou npm/yarn)
+- Docker et Docker Compose (optionnel, pour le développement et la production containerisés)
+
+## 🚀 Installation
+
+1. **Cloner le repository** (si applicable)
 ```bash
-$ pnpm install
+git clone <repository-url>
+cd camer-ride-share
 ```
 
-## Compile and run the project
-
+2. **Installer les dépendances**
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+pnpm install
 ```
 
-## Run tests
+## ⚙️ Configuration
 
-```bash
-# unit tests
-$ pnpm run test
+### Variables d'environnement
 
-# e2e tests
-$ pnpm run test:e2e
+Créez un fichier `.env` à la racine du projet en vous basant sur `.env.example` :
 
-# test coverage
-$ pnpm run test:cov
+```env
+# JWT Authentication
+JWT_SECRET="your-secret-key-here-change-in-production"
+
+# Server
+PORT=3000
 ```
 
-## Deployment
+**Important**: Remplacez les valeurs par défaut par vos propres valeurs de production, surtout `JWT_SECRET`.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## 🚀 Lancement du serveur
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Option 1 : Avec Docker Compose (Dev + Prod)
 
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
-
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
+1. **Préparez les variables d'environnement**
 
 ```bash
-$ pnpm install
+cp .env.example .env
 ```
 
-## Compile and run the project
+2. **Mode développement (hot-reload)**
 
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+docker compose up --build
 ```
 
-## Run tests
+3. **Mode production (image buildée + dist)**
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+docker compose -f docker-compose.prod.yml up --build -d
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+4. **Arrêter les services**
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+docker compose down
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Les services seront disponibles sur :
+- **API**: http://localhost:3000
 
-## Resources
+### Option 2 : En local (Développement)
 
-Check out a few resources that may come in handy when working with NestJS:
+1. **Créez le fichier `.env`** avec vos configurations
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+2. **Lancez le serveur**
 
-## Support
+```bash
+# Mode développement (avec rechargement automatique) - RECOMMANDÉ
+pnpm run start:dev
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+# Mode standard
+pnpm run start
 
-## Stay in touch
+# Mode production (nécessite compilation préalable)
+pnpm run build
+pnpm run start:prod
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+# Mode debug
+pnpm run start:debug
+```
 
-## License
+Le serveur sera accessible sur **http://localhost:3000** (ou le port défini dans `.env`).
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
-# CamerRideShare API Documentation
+## 📚 Documentation API
 
-## Authentication
+### Base URL
 
-### 1. Inscription (Register)
+```
+http://localhost:3000
+```
+
+### Authentification
+
+#### 1. Inscription (Register)
 
 **Endpoint:** `POST /auth/register`
 
@@ -210,11 +144,21 @@ Crée un nouvel utilisateur.
 }
 ```
 
-**Réponse (Succès):**
+**Réponse (Succès - 201):**
 
-Renvoie l'objet utilisateur créé (sans le hachage du mot de passe).
+```json
+{
+  "id": 1,
+  "email": "user@example.com",
+  "phoneNumber": "690000000",
+  "fullName": "John Doe",
+  "role": "DRIVER",
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-01T00:00:00.000Z"
+}
+```
 
-### 2. Connexion (Login)
+#### 2. Connexion (Login)
 
 **Endpoint:** `POST /auth/login`
 
@@ -229,27 +173,225 @@ Authentifie un utilisateur et renvoie un token JWT.
 }
 ```
 
-**Réponse (Succès):**
+**Réponse (Succès - 200):**
 
 ```json
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR...",
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "user": {
     "id": 1,
     "email": "user@example.com",
     "fullName": "John Doe",
     "role": "DRIVER",
     "phoneNumber": "690000000",
-    "createdAt": "...",
-    "updatedAt": "..."
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
   }
 }
 ```
 
-## Sécurité
+**Réponse (Erreur - 401):**
 
-Pour accéder aux routes protégées, vous devez inclure le token JWT dans le header `Authorization` de vos requêtes HTTP :
+```json
+{
+  "statusCode": 401,
+  "message": "Invalid credentials",
+  "error": "Unauthorized"
+}
+```
+
+### Routes protégées
+
+Toutes les routes `/users` nécessitent une authentification JWT.
+
+**Header requis:**
 
 ```
 Authorization: Bearer <votre_access_token>
 ```
+
+#### Gestion des utilisateurs
+
+**GET /users** - Liste tous les utilisateurs
+- **Auth**: Requis
+- **Réponse**: Tableau d'utilisateurs
+
+**GET /users/:id** - Récupère un utilisateur par ID
+- **Auth**: Requis
+- **Paramètres**: `id` (number)
+- **Réponse**: Objet utilisateur
+
+**POST /users** - Crée un nouvel utilisateur
+- **Auth**: Requis
+- **Corps**: `CreateUserDto`
+- **Réponse**: Objet utilisateur créé
+
+**PATCH /users/:id** - Met à jour un utilisateur
+- **Auth**: Requis
+- **Paramètres**: `id` (number)
+- **Corps**: `UpdateUserDto`
+- **Réponse**: Objet utilisateur mis à jour
+
+**DELETE /users/:id** - Supprime un utilisateur
+- **Auth**: Requis
+- **Paramètres**: `id` (number)
+- **Réponse**: 200 OK
+
+### Exemple d'utilisation
+
+```bash
+# 1. Inscription
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phoneNumber": "690000000",
+    "password": "password123",
+    "fullName": "John Doe",
+    "role": "DRIVER"
+  }'
+
+# 2. Connexion
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phoneNumber": "690000000",
+    "password": "password123"
+  }'
+
+# 3. Accéder à une route protégée
+curl -X GET http://localhost:3000/users \
+  -H "Authorization: Bearer <votre_access_token>"
+```
+
+## 📁 Structure du projet
+
+```
+src/
+├── auth/                    # Module d'authentification
+│   ├── decorators/
+│   │   └── current-user.decorator.ts  # Décorateur pour récupérer l'utilisateur
+│   ├── dto/
+│   │   ├── login.dto.ts     # DTO pour la connexion
+│   │   └── register.dto.ts  # DTO pour l'inscription
+│   ├── auth.controller.ts   # Contrôleur d'authentification
+│   ├── auth.module.ts       # Module d'authentification
+│   ├── auth.service.ts      # Service d'authentification
+│   ├── jwt-auth.guard.ts    # Guard JWT pour protéger les routes
+│   └── jwt.strategy.ts      # Stratégie JWT Passport
+├── users/                   # Module utilisateurs
+│   ├── dto/
+│   │   ├── create-user.dto.ts
+│   │   └── update-user.dto.ts
+│   ├── users.controller.ts  # Contrôleur utilisateurs (protégé)
+│   ├── users.module.ts      # Module utilisateurs
+│   └── users.service.ts     # Service utilisateurs
+├── prisma/                  # Module Prisma
+│   ├── prisma.module.ts
+│   └── prisma.service.ts
+├── app.controller.ts        # Contrôleur principal
+├── app.module.ts           # Module principal
+├── app.service.ts          # Service principal
+└── main.ts                 # Point d'entrée de l'application
+
+docker-compose.yml          # Configuration Docker
+.env.example                # Template des variables d'environnement
+```
+
+## 🔒 Sécurité
+
+### Authentification JWT
+
+- Les tokens JWT expirent après **1 jour**
+- Le secret JWT doit être stocké dans une variable d'environnement
+- Les mots de passe sont hachés avec **bcrypt** avant stockage
+- Les routes protégées nécessitent un token JWT valide dans le header `Authorization`
+
+### Protection des routes
+
+- Utilisez `@UseGuards(JwtAuthGuard)` pour protéger les routes
+- Utilisez `@CurrentUser()` pour récupérer l'utilisateur authentifié dans les contrôleurs
+
+**Exemple:**
+
+```typescript
+@Get('profile')
+@UseGuards(JwtAuthGuard)
+getProfile(@CurrentUser() user: any) {
+  return user;
+}
+```
+
+## 🧪 Tests
+
+```bash
+# Tests unitaires
+pnpm run test
+
+# Tests en mode watch
+pnpm run test:watch
+
+# Tests e2e
+pnpm run test:e2e
+
+# Couverture de code
+pnpm run test:cov
+```
+
+## 🚢 Déploiement
+
+### Build de production
+
+```bash
+# Compiler le projet
+pnpm run build
+
+# Lancer en mode production
+pnpm run start:prod
+```
+
+### Variables d'environnement en production
+
+Assurez-vous de définir les variables d'environnement suivantes :
+- `JWT_SECRET`: Secret JWT fort et unique (générez-en un nouveau pour la production)
+- `PORT`: Port sur lequel l'API écoute (optionnel, défaut: 3000)
+
+## 📝 Scripts disponibles
+
+| Commande | Description |
+|----------|-------------|
+| `pnpm run start:dev` | Mode développement avec rechargement automatique |
+| `pnpm run start` | Mode standard |
+| `pnpm run start:prod` | Mode production |
+| `pnpm run build` | Compiler le projet TypeScript |
+| `pnpm run start:debug` | Mode debug avec watch |
+| `pnpm run test` | Lancer les tests unitaires |
+| `pnpm run test:e2e` | Lancer les tests e2e |
+| `pnpm run lint` | Vérifier le code avec ESLint |
+
+## 🐛 Résolution de problèmes
+
+### Port déjà utilisé
+- Changez le `PORT` dans `.env`
+- Ou arrêtez le processus qui utilise le port 3000
+
+### Erreur de build Docker
+- Le `Dockerfile` installe `openssl`, `python3`, `make` et `g++` pour les dépendances natives Node.js
+- Rebuild complet: `docker compose build --no-cache`
+
+### Token JWT invalide
+- Vérifiez que le token n'a pas expiré (durée de vie: 1 jour)
+- Vérifiez que le header `Authorization` est correctement formaté: `Bearer <token>`
+- Vérifiez que `JWT_SECRET` est le même que celui utilisé lors de la génération du token
+
+## 📄 License
+
+Ce projet est sous licence MIT.
+
+## 👥 Auteurs
+
+Équipe CamerRideShare
+
+---
+
+Pour plus d'informations sur NestJS, consultez la [documentation officielle](https://docs.nestjs.com).
+

@@ -3,7 +3,9 @@ dist
 .git
 .gitignore
 .env
-docker-compose.yml
 Dockerfile
 README.md
 test
+coverage
+npm-debug.log
+pnpm-debug.log

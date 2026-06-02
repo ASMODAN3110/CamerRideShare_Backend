@@ -2,38 +2,16 @@ services:
   api:
     build:
       context: .
-      dockerfile: Dockerfile
+      target: dev
     container_name: camerrideshare_api
+    env_file:
+      - .env
+    environment:
+      PORT: ${PORT:-3000}
     ports:
       - "3000:3000"
-    environment:
-      DATABASE_URL: "postgresql://postgres:0901@postgres:5432/camerrideshare?schema=public"
-      JWT_SECRET: "52ccef3b-774d-4703-bb47-f7d9b66d8ed1"
-    command: >
-      sh -c "npx prisma db push && pnpm run start:prod"
-    restart: always
-    depends_on:
-      - postgres
-    networks:
-      - camerrideshare-net
-
-  postgres:
-    image: postgres:17
-    container_name: camerrideshare_db
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: "0901"
-      POSTGRES_DB: camerrideshare
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - camerrideshare-net
-
-volumes:
-  postgres_data:
-
-
-networks:
-  camerrideshare-net:
+      - .:/app
+      - /app/node_modules
+    command: sh -c "pnpm prisma generate && pnpm run start:dev"
+    restart: unless-stopped
