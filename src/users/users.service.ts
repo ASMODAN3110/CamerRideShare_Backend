@@ -5,6 +5,18 @@ import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from '@prisma/client';
 
+/** Champs sélectionnables pour les réponses API (sans le passwordHash). */
+const USER_PUBLIC_SELECT = {
+    id: true,
+    email: true,
+    fullName: true,
+    role: true,
+    phoneNumber: true,
+    avatarUrl: true,
+    createdAt: true,
+    updatedAt: true,
+} as const;
+
 @Injectable()
 export class UsersService {
     constructor(private readonly prisma: PrismaService) { }
@@ -42,8 +54,18 @@ export class UsersService {
         });
     }
 
+    /** Retourne tous les utilisateurs sans le mot de passe. */
     async findAll(): Promise<User[]> {
-        return this.prisma.user.findMany();
+        // @ts-expect-error — Prisma n'exporte pas le type du select partiel
+        return this.prisma.user.findMany({ select: USER_PUBLIC_SELECT });
+    }
+
+    /** Retourne uniquement les chauffeurs, sans le mot de passe. */
+    async findDrivers() {
+        return this.prisma.user.findMany({
+            where: { role: UserRole.DRIVER },
+            select: USER_PUBLIC_SELECT,
+        });
     }
 
     async findOne(id: number): Promise<User> {

@@ -5,17 +5,19 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { JwtStrategy } from './jwt.strategy';
+import { RolesGuard } from './roles.guard';
 
 @Module({
   imports: [
     UsersModule,
     PassportModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'dev_secret_key', // TODO: Use env variable
+      secret: process.env.JWT_SECRET || 'dev_secret_key',
       signOptions: { expiresIn: '1d' },
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, RolesGuard],
+  exports: [RolesGuard, JwtModule, PassportModule],
 })
-export class AuthModule { }
+export class AuthModule {}

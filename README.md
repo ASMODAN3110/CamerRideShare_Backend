@@ -93,6 +93,16 @@ docker compose down
 Les services seront disponibles sur :
 - **API**: http://localhost:3000
 
+**Base de données** : PostgreSQL doit tourner **en dehors de Docker** (local ou distant). Dans le conteneur, `DATABASE_URL` est automatiquement redirigée vers `host.docker.internal:5432` pour joindre Postgres sur votre machine hôte.
+
+Créez la base une première fois si elle n'existe pas :
+
+```bash
+docker run --rm -e PGPASSWORD=<votre_mot_de_passe> postgres:17-alpine psql -h host.docker.internal -U postgres -c "CREATE DATABASE camerrideshare;"
+```
+
+Au démarrage, le conteneur exécute `prisma db push` pour appliquer le schéma.
+
 ### Option 2 : En local (Développement)
 
 1. **Créez le fichier `.env`** avec vos configurations
@@ -237,6 +247,73 @@ Authorization: Bearer <votre_access_token>
 - **Paramètres**: `id` (number)
 - **Réponse**: 200 OK
 
+### Dashboard Admin (rôle ADMIN requis)
+
+Toutes les routes ci-dessous nécessitent un token JWT avec le rôle `ADMIN` :
+
+```
+Authorization: Bearer <access_token>
+```
+
+#### GET /admin/dashboard/overview
+
+KPIs agrégés : flotte, investisseurs actifs, revenu mensuel, statut flotte, trésorerie hebdomadaire. Les `deltaPct` comparent les valeurs courantes au snapshot du mois précédent.
+
+#### GET /admin/alerts?priority=high
+
+Alertes prioritaires : paiements en retard (≥ 21 jours sans paiement vérifié) et incidents ouverts.
+
+#### GET /transactions?limit=10&sort=desc
+
+Liste des transactions récentes (`limit` max 50, défaut 10).
+
+#### POST /payments
+
+Enregistre un paiement vérifié pour un chauffeur.
+
+```json
+{
+  "driverId": 4,
+  "amount": 15000,
+  "type": "PAYMENT"
+}
+```
+
+#### POST /incidents
+
+Crée un incident ouvert.
+
+```json
+{
+  "driverId": 4,
+  "motoId": 1,
+  "type": "ACCIDENT",
+  "description": "Description de l'incident"
+}
+```
+
+#### POST /invitations
+
+Crée une invitation investisseur en attente (sans créer de compte User).
+
+```json
+{
+  "email": "nouveau@investisseur.com",
+  "role": "INVESTOR"
+}
+```
+
+### Données de démonstration
+
+Appliquez le schéma puis chargez les données de test :
+
+```bash
+pnpm prisma db push
+pnpm run db:seed
+```
+
+Compte admin seed : `690000001` / `password123`
+
 ### Exemple d'utilisation
 
 ```bash
@@ -261,6 +338,20 @@ curl -X POST http://localhost:3000/auth/login \
 # 3. Accéder à une route protégée
 curl -X GET http://localhost:3000/users \
   -H "Authorization: Bearer <votre_access_token>"
+
+# 4. Dashboard admin (connexion admin requise)
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"phoneNumber":"690000001","password":"password123"}'
+
+curl -X GET http://localhost:3000/admin/dashboard/overview \
+  -H "Authorization: Bearer <admin_access_token>"
+
+curl -X GET "http://localhost:3000/admin/alerts?priority=high" \
+  -H "Authorization: Bearer <admin_access_token>"
+
+curl -X GET "http://localhost:3000/transactions?limit=10&sort=desc" \
+  -H "Authorization: Bearer <admin_access_token>"
 ```
 
 ## 📁 Structure du projet
@@ -367,6 +458,8 @@ Assurez-vous de définir les variables d'environnement suivantes :
 | `pnpm run test` | Lancer les tests unitaires |
 | `pnpm run test:e2e` | Lancer les tests e2e |
 | `pnpm run lint` | Vérifier le code avec ESLint |
+| `pnpm run db:push` | Appliquer le schéma Prisma à la base |
+| `pnpm run db:seed` | Charger les données de démonstration |
 
 ## 🐛 Résolution de problèmes
 

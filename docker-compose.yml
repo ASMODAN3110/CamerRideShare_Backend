@@ -8,10 +8,13 @@ services:
       - .env
     environment:
       PORT: ${PORT:-3000}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@host.docker.internal:5432/${POSTGRES_DB:-camerrideshare}?schema=public
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "3000:3000"
     volumes:
       - .:/app
       - /app/node_modules
-    command: sh -c "pnpm prisma generate && pnpm run start:dev"
+    command: sh -c "pnpm prisma generate && pnpm prisma db push && pnpm run start:dev"
     restart: unless-stopped
