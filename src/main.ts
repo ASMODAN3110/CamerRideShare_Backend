@@ -11,7 +11,12 @@ async function bootstrap() {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
-  app.enableCors();
+  app.enableCors({
+    origin: process.env.FRONTEND_URL?.split(',').map((o) => o.trim()) ?? true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  });
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }
 bootstrap();
