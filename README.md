@@ -1,6 +1,6 @@
 # CamerRideShare API
 
-API backend pour l'application de covoiturage CamerRideShare, construite avec NestJS et TypeScript.
+API backend de gestion de flotte de motos pour le covoiturage au Cameroun, construite avec **NestJS** et **TypeScript**.
 
 ## 📋 Table des matières
 
@@ -10,6 +10,7 @@ API backend pour l'application de covoiturage CamerRideShare, construite avec Ne
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Lancement du serveur](#lancement-du-serveur)
+- [Schéma de données](#schéma-de-données)
 - [Documentation API](#documentation-api)
 - [Structure du projet](#structure-du-projet)
 - [Tests](#tests)
@@ -17,144 +18,146 @@ API backend pour l'application de covoiturage CamerRideShare, construite avec Ne
 
 ## 📝 Description
 
-CamerRideShare est une API REST pour une application de covoiturage permettant de gérer les utilisateurs (conducteurs, investisseurs, administrateurs) avec un système d'authentification JWT sécurisé.
+CamerRideShare est une API REST qui permet de gérer :
+
+- **Utilisateurs** avec 3 rôles : `ADMIN`, `DRIVER`, `INVESTOR`
+- **Flotte de motos** — suivi des motos, des investissements et des conducteurs
+- **Paiements** — enregistrement des paiements conducteurs et dépenses
+- **Incidents** — signalement et suivi des incidents (accidents, vols, pannes)
+- **Invitations** — système d'invitation pour les investisseurs
+- **Dashboard** — KPIs, alertes de paiements en retard et incidents ouverts
+
+Schéma : [prisma/schema.prisma](prisma/schema.prisma)
 
 ## 🛠 Technologies
 
-- **Framework**: [NestJS](https://nestjs.com/) - Framework Node.js progressif
-- **Language**: TypeScript
-- **Authentification**: JWT (JSON Web Tokens) avec Passport
-- **Sécurité**: bcrypt pour le hachage des mots de passe
-- **Validation**: class-validator, class-transformer
+- **Framework** : [NestJS](https://nestjs.com/) v11
+- **Langage** : TypeScript v5
+- **Base de données** : PostgreSQL avec [Prisma ORM](https://www.prisma.io/) v5 (client type-safe)
+- **Authentification** : JWT (JSON Web Tokens) via Passport
+- **Sécurité** : bcrypt pour le hachage des mots de passe
+- **Validation** : class-validator + class-transformer
+- **Conteneurisation** : Docker multi-stage (dev + prod)
+- **Package manager** : pnpm (avec workspace)
 
 ## 📦 Prérequis
 
-- Node.js (v18 ou supérieur)
-- pnpm (ou npm/yarn)
-- Docker et Docker Compose (optionnel, pour le développement et la production containerisés)
+- Node.js >= 18
+- pnpm
+- Docker & Docker Compose (optionnel mais recommandé)
+- PostgreSQL 15+ (locale ou distante)
 
 ## 🚀 Installation
 
-1. **Cloner le repository** (si applicable)
 ```bash
+# 1. Cloner
 git clone <repository-url>
 cd camer-ride-share
-```
 
-2. **Installer les dépendances**
-```bash
+# 2. Installer les dépendances
 pnpm install
+
+# 3. Copier et ajuster le fichier d'environnement
+cp .env.example .env
 ```
 
 ## ⚙️ Configuration
 
-### Variables d'environnement
-
-Créez un fichier `.env` à la racine du projet en vous basant sur `.env.example` :
+Créez un fichier `.env` à la racine :
 
 ```env
-# JWT Authentication
+# Base de données
+DATABASE_URL="postgresql://postgres:password@localhost:5432/camerrideshare?schema=public"
+
+# JWT
 JWT_SECRET="your-secret-key-here-change-in-production"
 
-# Server
+# Serveur
 PORT=3000
 ```
 
-**Important**: Remplacez les valeurs par défaut par vos propres valeurs de production, surtout `JWT_SECRET`.
+> **En Docker**, l'URL de connexion est automatiquement redirigée vers `host.docker.internal:5432` par Docker Compose. Voir [docker-compose.yml](docker-compose.yml).
 
 ## 🚀 Lancement du serveur
 
-### Option 1 : Avec Docker Compose (Dev + Prod)
-
-1. **Préparez les variables d'environnement**
+### Avec Docker Compose (recommandé)
 
 ```bash
-cp .env.example .env
-```
-
-2. **Mode développement (hot-reload)**
-
-```bash
+# Développement (hot-reload)
 docker compose up --build
-```
 
-3. **Mode production (image buildée + dist)**
-
-```bash
+# Production
 docker compose -f docker-compose.prod.yml up --build -d
-```
 
-4. **Arrêter les services**
-
-```bash
+# Arrêter
 docker compose down
 ```
 
-Les services seront disponibles sur :
-- **API**: http://localhost:3000
-
-**Base de données** : PostgreSQL doit tourner **en dehors de Docker** (local ou distant). Dans le conteneur, `DATABASE_URL` est automatiquement redirigée vers `host.docker.internal:5432` pour joindre Postgres sur votre machine hôte.
+> PostgreSQL doit tourner **sur la machine hôte** (port 5432 accessible). Le conteneur se connecte via `host.docker.internal`.
 
 Créez la base une première fois si elle n'existe pas :
 
 ```bash
-docker run --rm -e PGPASSWORD=<votre_mot_de_passe> postgres:17-alpine psql -h host.docker.internal -U postgres -c "CREATE DATABASE camerrideshare;"
+docker run --rm -e PGPASSWORD=<password> postgres:17-alpine \
+  psql -h host.docker.internal -U postgres -c "CREATE DATABASE camerrideshare;"
 ```
 
-Au démarrage, le conteneur exécute `prisma db push` pour appliquer le schéma.
-
-### Option 2 : En local (Développement)
-
-1. **Créez le fichier `.env`** avec vos configurations
-
-2. **Lancez le serveur**
+### En local
 
 ```bash
-# Mode développement (avec rechargement automatique) - RECOMMANDÉ
+# Appliquer le schéma Prisma
+pnpm run db:push
+
+# (Optionnel) Charger les données de démonstration
+pnpm run db:seed
+
+# Démarrer en mode développement (hot-reload)
 pnpm run start:dev
-
-# Mode standard
-pnpm run start
-
-# Mode production (nécessite compilation préalable)
-pnpm run build
-pnpm run start:prod
-
-# Mode debug
-pnpm run start:debug
 ```
 
-Le serveur sera accessible sur **http://localhost:3000** (ou le port défini dans `.env`).
+Le serveur est accessible sur **http://localhost:3000**.
+
+## 📦 Schéma de données
+
+```prisma
+enum UserRole { ADMIN, INVESTOR, DRIVER }
+enum MotoStatus { ACTIVE, STOLEN, BROKEN }
+enum PaymentType { PAYMENT, EXPENSE }
+enum PaymentStatus { VERIFIED, PENDING }
+enum IncidentStatus { OPEN, RESOLVED }
+enum InvitationStatus { PENDING, ACCEPTED, EXPIRED }
+```
+
+```
+User ──┬── Moto (driver)     ── Payment
+       ├── Moto (investor)   ── Incident
+       └── Invitation (creator)
+```
+
+- Les **motos** sont liées à un conducteur et/ou un investisseur (optionnel)
+- Les **paiements** sont toujours liés à un conducteur
+- Les **incidents** sont liés à un conducteur, et optionnellement à une moto
+- Les **invitations** permettent d'inviter un investisseur sans créer de compte User
 
 ## 📚 Documentation API
 
-### Base URL
-
-```
-http://localhost:3000
-```
-
 ### Authentification
 
-#### 1. Inscription (Register)
-
-**Endpoint:** `POST /auth/register`
+#### POST /auth/register
 
 Crée un nouvel utilisateur.
 
-**Corps de la requête (JSON):**
-
 ```json
 {
-  "email": "user@example.com",     // Optionnel
-  "phoneNumber": "690000000",      // Obligatoire, doit être unique
-  "password": "password123",       // Obligatoire, min 6 caractères
-  "fullName": "John Doe",          // Obligatoire
-  "role": "DRIVER"                 // Obligatoire: 'DRIVER', 'INVESTOR', 'ADMIN'
+  "email": "user@example.com",
+  "phoneNumber": "690000000",
+  "password": "password123",
+  "fullName": "John Doe",
+  "role": "DRIVER"
 }
 ```
 
-**Réponse (Succès - 201):**
+**Réponse** `201` :
 
 ```json
 {
@@ -162,114 +165,79 @@ Crée un nouvel utilisateur.
   "email": "user@example.com",
   "phoneNumber": "690000000",
   "fullName": "John Doe",
-  "role": "DRIVER",
-  "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T00:00:00.000Z"
+  "role": "DRIVER"
 }
 ```
 
-#### 2. Connexion (Login)
+#### POST /auth/login
 
-**Endpoint:** `POST /auth/login`
-
-Authentifie un utilisateur et renvoie un token JWT.
-
-**Corps de la requête (JSON):**
+Authentifie et retourne un token JWT (durée de vie : 1 jour).
 
 ```json
 {
-  "phoneNumber": "690000000",      // Obligatoire
-  "password": "password123"        // Obligatoire
+  "phoneNumber": "690000000",
+  "password": "password123"
 }
 ```
 
-**Réponse (Succès - 200):**
+**Réponse** `200` :
 
 ```json
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
   "user": {
     "id": 1,
-    "email": "user@example.com",
     "fullName": "John Doe",
     "role": "DRIVER",
-    "phoneNumber": "690000000",
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
+    "phoneNumber": "690000000"
   }
-}
-```
-
-**Réponse (Erreur - 401):**
-
-```json
-{
-  "statusCode": 401,
-  "message": "Invalid credentials",
-  "error": "Unauthorized"
 }
 ```
 
 ### Routes protégées
 
-Toutes les routes `/users` nécessitent une authentification JWT.
+Toutes ces routes nécessitent :
 
-**Header requis:**
-
-```
-Authorization: Bearer <votre_access_token>
-```
-
-#### Gestion des utilisateurs
-
-**GET /users** - Liste tous les utilisateurs
-- **Auth**: Requis
-- **Réponse**: Tableau d'utilisateurs
-
-**GET /users/:id** - Récupère un utilisateur par ID
-- **Auth**: Requis
-- **Paramètres**: `id` (number)
-- **Réponse**: Objet utilisateur
-
-**POST /users** - Crée un nouvel utilisateur
-- **Auth**: Requis
-- **Corps**: `CreateUserDto`
-- **Réponse**: Objet utilisateur créé
-
-**PATCH /users/:id** - Met à jour un utilisateur
-- **Auth**: Requis
-- **Paramètres**: `id` (number)
-- **Corps**: `UpdateUserDto`
-- **Réponse**: Objet utilisateur mis à jour
-
-**DELETE /users/:id** - Supprime un utilisateur
-- **Auth**: Requis
-- **Paramètres**: `id` (number)
-- **Réponse**: 200 OK
-
-### Dashboard Admin (rôle ADMIN requis)
-
-Toutes les routes ci-dessous nécessitent un token JWT avec le rôle `ADMIN` :
-
-```
+```http
 Authorization: Bearer <access_token>
 ```
 
-#### GET /admin/dashboard/overview
+#### Utilisateurs
 
-KPIs agrégés : flotte, investisseurs actifs, revenu mensuel, statut flotte, trésorerie hebdomadaire. Les `deltaPct` comparent les valeurs courantes au snapshot du mois précédent.
+| Méthode | Endpoint | Auth | Description |
+|---------|----------|------|-------------|
+| `GET` | `/users` | JWT | Liste tous les utilisateurs (sans `passwordHash`) |
+| `GET` | `/users/drivers` | JWT | Liste les chauffeurs uniquement (sans `passwordHash`) |
+| `GET` | `/users/:id` | JWT | Récupère un utilisateur par ID |
+| `POST` | `/users` | JWT | Crée un utilisateur |
+| `PATCH` | `/users/:id` | JWT | Met à jour un utilisateur |
+| `DELETE` | `/users/:id` | JWT | Supprime un utilisateur |
 
-#### GET /admin/alerts?priority=high
+#### Motos
 
-Alertes prioritaires : paiements en retard (≥ 21 jours sans paiement vérifié) et incidents ouverts.
+| Méthode | Endpoint | Auth | Description |
+|---------|----------|------|-------------|
+| `GET` | `/motos` | JWT + ADMIN | Liste toutes les motos (avec conducteur & investisseur) |
+| `GET` | `/motos/available` | JWT + ADMIN | Motos actives sans conducteur attribué |
 
-#### GET /transactions?limit=10&sort=desc
+#### Dashboard Admin (rôle ADMIN requis)
 
-Liste des transactions récentes (`limit` max 50, défaut 10).
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| `GET` | `/admin/dashboard/overview` | KPIs aggrégés (flotte, investisseurs, revenu mensuel, statut flotte, trésorerie hebdomadaire). Les `deltaPct` comparent au mois précédent. |
+| `GET` | `/admin/alerts?priority=high` | Alertes : paiements en retard (≥ 21 jours sans paiement) et incidents ouverts |
 
-#### POST /payments
+#### Transactions
 
-Enregistre un paiement vérifié pour un chauffeur.
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| `GET` | `/transactions?limit=10&sort=desc` | Transactions récentes (`limit` max 50, défaut 10) |
+
+#### Paiements
+
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| `POST` | `/payments` | Enregistre un paiement vérifié |
 
 ```json
 {
@@ -279,22 +247,30 @@ Enregistre un paiement vérifié pour un chauffeur.
 }
 ```
 
-#### POST /incidents
+`type` : `"PAYMENT"` (paiement conducteur) ou `"EXPENSE"` (dépense).
 
-Crée un incident ouvert.
+#### Incidents
+
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| `POST` | `/incidents` | Crée un incident ouvert |
 
 ```json
 {
   "driverId": 4,
   "motoId": 1,
-  "type": "ACCIDENT",
+  "type": "Accident",
   "description": "Description de l'incident"
 }
 ```
 
-#### POST /invitations
+`motoId` est optionnel.
 
-Crée une invitation investisseur en attente (sans créer de compte User).
+#### Invitations
+
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| `POST` | `/invitations` | Crée une invitation investisseur (sans créer de compte User) |
 
 ```json
 {
@@ -303,182 +279,156 @@ Crée une invitation investisseur en attente (sans créer de compte User).
 }
 ```
 
-### Données de démonstration
-
-Appliquez le schéma puis chargez les données de test :
+### Exemples curl
 
 ```bash
-pnpm prisma db push
+# 1. Connexion
+TOKEN=$(curl -s -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"phoneNumber":"690000001","password":"password123"}' \
+  | jq -r '.access_token')
+
+# 2. Dashboard
+curl http://localhost:3000/admin/dashboard/overview \
+  -H "Authorization: Bearer $TOKEN"
+
+# 3. Liste des chauffeurs
+curl http://localhost:3000/users/drivers \
+  -H "Authorization: Bearer $TOKEN"
+
+# 4. Motos disponibles
+curl http://localhost:3000/motos/available \
+  -H "Authorization: Bearer $TOKEN"
+
+# 5. Créer un paiement
+curl -X POST http://localhost:3000/payments \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"driverId":4,"amount":15000,"type":"PAYMENT"}'
+```
+
+### Données de démonstration
+
+```bash
 pnpm run db:seed
 ```
 
 Compte admin seed : `690000001` / `password123`
 
-### Exemple d'utilisation
-
-```bash
-# 1. Inscription
-curl -X POST http://localhost:3000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "phoneNumber": "690000000",
-    "password": "password123",
-    "fullName": "John Doe",
-    "role": "DRIVER"
-  }'
-
-# 2. Connexion
-curl -X POST http://localhost:3000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "phoneNumber": "690000000",
-    "password": "password123"
-  }'
-
-# 3. Accéder à une route protégée
-curl -X GET http://localhost:3000/users \
-  -H "Authorization: Bearer <votre_access_token>"
-
-# 4. Dashboard admin (connexion admin requise)
-curl -X POST http://localhost:3000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"phoneNumber":"690000001","password":"password123"}'
-
-curl -X GET http://localhost:3000/admin/dashboard/overview \
-  -H "Authorization: Bearer <admin_access_token>"
-
-curl -X GET "http://localhost:3000/admin/alerts?priority=high" \
-  -H "Authorization: Bearer <admin_access_token>"
-
-curl -X GET "http://localhost:3000/transactions?limit=10&sort=desc" \
-  -H "Authorization: Bearer <admin_access_token>"
-```
-
 ## 📁 Structure du projet
 
 ```
 src/
-├── auth/                    # Module d'authentification
-│   ├── decorators/
-│   │   └── current-user.decorator.ts  # Décorateur pour récupérer l'utilisateur
+├── admin/                        # Dashboard admin (KPIs, alertes)
+│   ├── admin.controller.ts
+│   ├── admin-dashboard.service.ts
+│   └── admin.module.ts
+├── alerts/                       # Alertes (paiements en retard, incidents)
 │   ├── dto/
-│   │   ├── login.dto.ts     # DTO pour la connexion
-│   │   └── register.dto.ts  # DTO pour l'inscription
-│   ├── auth.controller.ts   # Contrôleur d'authentification
-│   ├── auth.module.ts       # Module d'authentification
-│   ├── auth.service.ts      # Service d'authentification
-│   ├── jwt-auth.guard.ts    # Guard JWT pour protéger les routes
-│   └── jwt.strategy.ts      # Stratégie JWT Passport
-├── users/                   # Module utilisateurs
+│   │   └── list-alerts-query.dto.ts
+│   ├── alerts.controller.ts
+│   ├── alerts.service.ts
+│   └── alerts.module.ts
+├── auth/                         # Authentification JWT
+│   ├── decorators/
+│   │   ├── current-user.decorator.ts
+│   │   └── roles.decorator.ts
+│   ├── dto/
+│   │   ├── login.dto.ts
+│   │   └── register.dto.ts
+│   ├── types/
+│   │   └── jwt-payload-user.type.ts
+│   ├── guards/
+│   │   ├── jwt-auth.guard.ts
+│   │   └── roles.guard.ts
+│   ├── auth.controller.ts
+│   ├── auth.module.ts
+│   ├── auth.service.ts
+│   └── jwt.strategy.ts
+├── common/                       # Utilitaires partagés
+│   └── utils/
+│       └── dashboard.utils.ts
+├── incidents/                    # Gestion des incidents
+│   ├── dto/
+│   │   └── create-incident.dto.ts
+│   ├── incidents.controller.ts
+│   ├── incidents.service.ts
+│   └── incidents.module.ts
+├── invitations/                  # Invitations investisseurs
+│   ├── dto/
+│   │   └── create-invitation.dto.ts
+│   ├── invitations.controller.ts
+│   ├── invitations.service.ts
+│   └── invitations.module.ts
+├── motos/                        # Gestion des motos
+│   ├── motos.controller.ts
+│   ├── motos.service.ts
+│   └── motos.module.ts
+├── payments/                     # Paiements conducteurs
+│   ├── dto/
+│   │   └── create-payment.dto.ts
+│   ├── payments.controller.ts
+│   ├── payments.service.ts
+│   └── payments.module.ts
+├── prisma/                       # Service Prisma (injecté globalement)
+│   ├── prisma.module.ts
+│   └── prisma.service.ts
+├── transactions/                 # Transactions consolidées
+│   ├── dto/
+│   │   └── list-transactions-query.dto.ts
+│   ├── transactions.controller.ts
+│   ├── transactions.service.ts
+│   └── transactions.module.ts
+├── users/                        # Gestion des utilisateurs
 │   ├── dto/
 │   │   ├── create-user.dto.ts
 │   │   └── update-user.dto.ts
-│   ├── users.controller.ts  # Contrôleur utilisateurs (protégé)
-│   ├── users.module.ts      # Module utilisateurs
-│   └── users.service.ts     # Service utilisateurs
-├── prisma/                  # Module Prisma
-│   ├── prisma.module.ts
-│   └── prisma.service.ts
-├── app.controller.ts        # Contrôleur principal
-├── app.module.ts           # Module principal
-├── app.service.ts          # Service principal
-└── main.ts                 # Point d'entrée de l'application
-
-docker-compose.yml          # Configuration Docker
-.env.example                # Template des variables d'environnement
+│   ├── users.controller.ts
+│   ├── users.module.ts
+│   └── users.service.ts
+├── app.controller.ts
+├── app.module.ts
+├── app.service.ts
+└── main.ts
 ```
 
 ## 🔒 Sécurité
 
-### Authentification JWT
-
-- Les tokens JWT expirent après **1 jour**
-- Le secret JWT doit être stocké dans une variable d'environnement
-- Les mots de passe sont hachés avec **bcrypt** avant stockage
-- Les routes protégées nécessitent un token JWT valide dans le header `Authorization`
-
-### Protection des routes
-
-- Utilisez `@UseGuards(JwtAuthGuard)` pour protéger les routes
-- Utilisez `@CurrentUser()` pour récupérer l'utilisateur authentifié dans les contrôleurs
-
-**Exemple:**
-
-```typescript
-@Get('profile')
-@UseGuards(JwtAuthGuard)
-getProfile(@CurrentUser() user: any) {
-  return user;
-}
-```
+- **Tokens JWT** : expirés après 1 jour, stockés en variable d'environnement
+- **Mots de passe** : hachés avec bcrypt (sel automatique)
+- **Routes protégées** : `@UseGuards(JwtAuthGuard)` pour toute requête authentifiée
+- **Rôles** : `@Roles(UserRole.ADMIN)` combiné à `RolesGuard` pour les routes reservées aux administrateurs
+- **`passwordHash`** : exclu des réponses API GET (champs `select` dédié)
 
 ## 🧪 Tests
 
 ```bash
-# Tests unitaires
-pnpm run test
-
-# Tests en mode watch
-pnpm run test:watch
-
-# Tests e2e
-pnpm run test:e2e
-
-# Couverture de code
-pnpm run test:cov
+pnpm run test          # Tests unitaires
+pnpm run test:watch    # Mode watch
+pnpm run test:cov      # Couverture de code
+pnpm run test:e2e      # Tests e2e
 ```
-
-## 🚢 Déploiement
-
-### Build de production
-
-```bash
-# Compiler le projet
-pnpm run build
-
-# Lancer en mode production
-pnpm run start:prod
-```
-
-### Variables d'environnement en production
-
-Assurez-vous de définir les variables d'environnement suivantes :
-- `JWT_SECRET`: Secret JWT fort et unique (générez-en un nouveau pour la production)
-- `PORT`: Port sur lequel l'API écoute (optionnel, défaut: 3000)
 
 ## 📝 Scripts disponibles
 
 | Commande | Description |
 |----------|-------------|
-| `pnpm run start:dev` | Mode développement avec rechargement automatique |
-| `pnpm run start` | Mode standard |
+| `pnpm run start:dev` | Mode développement (hot-reload) |
 | `pnpm run start:prod` | Mode production |
 | `pnpm run build` | Compiler le projet TypeScript |
-| `pnpm run start:debug` | Mode debug avec watch |
-| `pnpm run test` | Lancer les tests unitaires |
-| `pnpm run test:e2e` | Lancer les tests e2e |
 | `pnpm run lint` | Vérifier le code avec ESLint |
+| `pnpm run format` | Formater avec Prettier |
 | `pnpm run db:push` | Appliquer le schéma Prisma à la base |
 | `pnpm run db:seed` | Charger les données de démonstration |
 
 ## 🐛 Résolution de problèmes
 
-### Port déjà utilisé
-- Changez le `PORT` dans `.env`
-- Ou arrêtez le processus qui utilise le port 3000
-
-### Erreur de build Docker
-- Le `Dockerfile` installe `openssl`, `python3`, `make` et `g++` pour les dépendances natives Node.js
-- Rebuild complet: `docker compose build --no-cache`
-
-### Token JWT invalide
-- Vérifiez que le token n'a pas expiré (durée de vie: 1 jour)
-- Vérifiez que le header `Authorization` est correctement formaté: `Bearer <token>`
-- Vérifiez que `JWT_SECRET` est le même que celui utilisé lors de la génération du token
-
-## 📄 License
-
-Ce projet est sous licence MIT.
+| Problème | Solution |
+|----------|----------|
+| Port déjà utilisé | Changer `PORT` dans `.env` |
+| Build Docker lent | `docker compose build --no-cache` |
+| Token JWT invalide | Vérifier l'expiration (1 jour) et l'en-tête `Authorization: Bearer <token>` |
+| Connexion base de données | Vérifier que PostgreSQL est accessible sur le port 5432 |
 
 ## 👥 Auteurs
 
@@ -486,5 +436,4 @@ Ce projet est sous licence MIT.
 
 ---
 
-Pour plus d'informations sur NestJS, consultez la [documentation officielle](https://docs.nestjs.com).
-
+_Pour plus d'informations sur NestJS, consultez la [documentation officielle](https://docs.nestjs.com)._
