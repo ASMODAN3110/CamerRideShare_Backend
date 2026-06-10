@@ -60,12 +60,23 @@ export class UsersService {
         return this.prisma.user.findMany({ select: USER_PUBLIC_SELECT });
     }
 
-    /** Retourne uniquement les chauffeurs, sans le mot de passe. */
-    async findDrivers() {
+    /** Retourne les utilisateurs d'un rôle donné, sans le mot de passe, triés par nom. */
+    async findByRole(role: UserRole) {
         return this.prisma.user.findMany({
-            where: { role: UserRole.DRIVER },
+            where: { role },
+            orderBy: { fullName: 'asc' },
             select: USER_PUBLIC_SELECT,
         });
+    }
+
+    /** Retourne uniquement les chauffeurs, sans le mot de passe. */
+    async findDrivers() {
+        return this.findByRole(UserRole.DRIVER);
+    }
+
+    /** Retourne uniquement les investisseurs, sans le mot de passe. */
+    async findInvestors() {
+        return this.findByRole(UserRole.INVESTOR);
     }
 
     async findOne(id: number): Promise<User> {

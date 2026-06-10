@@ -207,25 +207,63 @@ Authorization: Bearer <access_token>
 | Méthode | Endpoint | Auth | Description |
 |---------|----------|------|-------------|
 | `GET` | `/users` | JWT | Liste tous les utilisateurs (sans `passwordHash`) |
-| `GET` | `/users/drivers` | JWT | Liste les chauffeurs uniquement (sans `passwordHash`) |
+| `GET` | `/users/drivers` | JWT + ADMIN | Liste les chauffeurs (sans `passwordHash`), tri par `fullName` |
+| `GET` | `/users/investors` | JWT + ADMIN | Liste les investisseurs (sans `passwordHash`), tri par `fullName` |
 | `GET` | `/users/:id` | JWT | Récupère un utilisateur par ID |
 | `POST` | `/users` | JWT | Crée un utilisateur |
 | `PATCH` | `/users/:id` | JWT | Met à jour un utilisateur |
 | `DELETE` | `/users/:id` | JWT | Supprime un utilisateur |
 
-#### Motos
+#### Motos (rôle ADMIN requis)
 
-| Méthode | Endpoint | Auth | Description |
-|---------|----------|------|-------------|
-| `GET` | `/motos` | JWT + ADMIN | Liste toutes les motos (avec conducteur & investisseur) |
-| `GET` | `/motos/available` | JWT + ADMIN | Motos actives sans conducteur attribué |
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| `GET` | `/motos?page=1&limit=12&search=&status=&city=&model=` | Liste paginée (`limit` max 50, défaut 12). Réponse `{ data, meta }` avec `ownershipPct`, `footerInfo`, conducteur & investisseur. |
+| `GET` | `/motos/filters` | Options dynamiques pour filtres : `cities`, `models`, `statuses` |
+| `GET` | `/motos/available` | Motos `ACTIVE` sans conducteur (modale incident) |
+| `GET` | `/motos/:id` | Fiche détail : incidents ouverts, paiements récents du chauffeur |
+| `POST` | `/motos` | Crée une moto (`status: ACTIVE`, `financedAmount: 0`) |
+| `PATCH` | `/motos/:id` | Met à jour partiellement (statut, réassignation, entretien, etc.) |
+
+**Breaking change :** `GET /motos` retourne désormais `{ data, meta }` au lieu d'un tableau brut.
+
+**Body `POST /motos` :**
+```json
+{
+  "matricule": "LT 9999 X",
+  "model": "125cc",
+  "city": "Douala",
+  "targetAmount": 5000000,
+  "driverId": 4,
+  "investorId": 2,
+  "imageUrl": null
+}
+```
+
+**Mapping statuts UI ↔ backend :**
+
+| UI Parc | `Moto.status` |
+|---------|---------------|
+| Actif | `ACTIVE` |
+| En panne | `BROKEN` |
+| Indisponible | `STOLEN` |
 
 #### Dashboard Admin (rôle ADMIN requis)
 
 | Méthode | Endpoint | Description |
 |---------|----------|-------------|
 | `GET` | `/admin/dashboard/overview` | KPIs aggrégés (flotte, investisseurs, revenu mensuel, statut flotte, trésorerie hebdomadaire). Les `deltaPct` comparent au mois précédent. |
+| `GET` | `/admin/fleet/summary` | KPI page Parc : `total`, `available`, `inMaintenance`, `incidents` (buckets exclusifs) |
 | `GET` | `/admin/alerts?priority=high` | Alertes : paiements en retard (≥ 21 jours sans paiement) et incidents ouverts |
+
+**Définitions `GET /admin/fleet/summary` :**
+
+| Champ | Calcul |
+|-------|--------|
+| `total` | Nombre total de motos |
+| `inMaintenance` | Motos `status === BROKEN` |
+| `incidents` | Motos `STOLEN` **ou** `ACTIVE` avec ≥1 incident `OPEN` lié (`motoId`) — compte de motos, pas de lignes incident |
+| `available` | `total - inMaintenance - incidents` |
 
 #### Transactions
 
@@ -296,11 +334,23 @@ curl http://localhost:3000/admin/dashboard/overview \
 curl http://localhost:3000/users/drivers \
   -H "Authorization: Bearer $TOKEN"
 
-# 4. Motos disponibles
+# 3b. Liste des investisseurs
+curl http://localhost:3000/users/investors \
+  -H "Authorization: Bearer $TOKEN"
+
+# 4. KPI page Parc
+curl http://localhost:3000/admin/fleet/summary \
+  -H "Authorization: Bearer $TOKEN"
+
+# 5. Liste motos paginée
+curl "http://localhost:3000/motos?page=1&limit=12&city=Douala" \
+  -H "Authorization: Bearer $TOKEN"
+
+# 6. Motos disponibles
 curl http://localhost:3000/motos/available \
   -H "Authorization: Bearer $TOKEN"
 
-# 5. Créer un paiement
+# 7. Créer un paiement
 curl -X POST http://localhost:3000/payments \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \

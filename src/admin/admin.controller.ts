@@ -4,15 +4,24 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { AdminDashboardService } from './admin-dashboard.service';
+import { FleetSummaryService } from './fleet-summary.service';
 
-@Controller('admin/dashboard')
+@Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
 export class AdminController {
-  constructor(private readonly adminDashboardService: AdminDashboardService) {}
+  constructor(
+    private readonly adminDashboardService: AdminDashboardService,
+    private readonly fleetSummaryService: FleetSummaryService,
+  ) {}
 
-  @Get('overview')
+  @Get('dashboard/overview')
   getOverview() {
     return this.adminDashboardService.getOverview();
+  }
+
+  @Get('fleet/summary')
+  getFleetSummary() {
+    return this.fleetSummaryService.getSummary();
   }
 }

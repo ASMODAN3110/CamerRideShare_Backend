@@ -11,7 +11,7 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 const CITIES = ['Douala', 'Yaoundé', 'Bafoussam', 'Garoua', 'Bamenda'];
-const MOTO_MODELS = ['TVS HLX', 'Bajaj Boxer', 'Honda Ace', 'Yamaha Crux'];
+const MOTO_MODELS = ['125cc', '150cc', '200cc'];
 
 function previousPeriod(date = new Date()): string {
   const d = new Date(date.getFullYear(), date.getMonth() - 1, 1);
@@ -76,10 +76,17 @@ async function main() {
     ),
   );
 
+  const TOTAL_MOTOS = 124;
+  const BROKEN_COUNT = 7;
+  const STOLEN_COUNT = 7;
+  const ACTIVE_WITH_OPEN_INCIDENT = 5;
+
   const motoStatuses: MotoStatus[] = [];
-  for (let i = 0; i < 110; i += 1) motoStatuses.push(MotoStatus.ACTIVE);
-  for (let i = 0; i < 8; i += 1) motoStatuses.push(MotoStatus.STOLEN);
-  for (let i = 0; i < 6; i += 1) motoStatuses.push(MotoStatus.BROKEN);
+  for (let i = 0; i < TOTAL_MOTOS - BROKEN_COUNT - STOLEN_COUNT; i += 1) {
+    motoStatuses.push(MotoStatus.ACTIVE);
+  }
+  for (let i = 0; i < STOLEN_COUNT; i += 1) motoStatuses.push(MotoStatus.STOLEN);
+  for (let i = 0; i < BROKEN_COUNT; i += 1) motoStatuses.push(MotoStatus.BROKEN);
 
   const motos = [];
   for (let i = 0; i < motoStatuses.length; i += 1) {
@@ -87,13 +94,19 @@ async function main() {
     const investor = investors[i % investors.length];
     const moto = await prisma.moto.create({
       data: {
+        matricule: `LT ${1000 + i} A`,
         model: MOTO_MODELS[i % MOTO_MODELS.length],
         city: CITIES[i % CITIES.length],
         status: motoStatuses[i],
         financedAmount: 800000 + (i % 5) * 50000,
-        targetAmount: 60000,
+        targetAmount: 5000000,
         driverId: driver.id,
         investorId: investor.id,
+        lastMaintenanceAt: i % 3 === 0 ? daysAgo(10 + (i % 60)) : null,
+        imageUrl:
+          i % 5 === 0
+            ? `https://picsum.photos/seed/moto${i}/400/300`
+            : null,
       },
     });
     motos.push(moto);
@@ -147,26 +160,25 @@ async function main() {
     });
   }
 
+  const activeMotos = motos.filter((moto) => moto.status === MotoStatus.ACTIVE);
+  const incidentMotos = activeMotos.slice(0, ACTIVE_WITH_OPEN_INCIDENT);
+
   await prisma.incident.createMany({
     data: [
-      {
-        driverId: drivers[0].id,
-        motoId: motos[0].id,
-        type: 'ACCIDENT',
-        description: 'Collision légère à Douala',
+      ...incidentMotos.map((moto, index) => ({
+        driverId: moto.driverId!,
+        motoId: moto.id,
+        type: index % 2 === 0 ? 'ACCIDENT' : 'THEFT_ATTEMPT',
+        description:
+          index % 2 === 0
+            ? 'Collision légère signalée'
+            : 'Tentative de vol signalée',
         status: IncidentStatus.OPEN,
-      },
-      {
-        driverId: drivers[1].id,
-        motoId: motos[1].id,
-        type: 'THEFT_ATTEMPT',
-        description: 'Tentative de vol signalée',
-        status: IncidentStatus.OPEN,
-      },
+      })),
       {
         driverId: drivers[2].id,
         type: 'BREAKDOWN',
-        description: 'Panne moteur',
+        description: 'Panne moteur (sans moto assignée)',
         status: IncidentStatus.RESOLVED,
       },
     ],
@@ -175,7 +187,7 @@ async function main() {
   await prisma.dashboardSnapshot.create({
     data: {
       period: previousPeriod(),
-      fleetTotal: 118,
+      fleetTotal: TOTAL_MOTOS,
       activeInvestors: 1,
       monthlyRevenue: 450000,
     },
@@ -183,6 +195,9 @@ async function main() {
 
   console.log('Seed completed.');
   console.log(`Admin login: phone 690000001 / password123 (id=${admin.id})`);
+  console.log(
+    `Fleet KPI target: total=${TOTAL_MOTOS}, available=105, inMaintenance=${BROKEN_COUNT}, incidents=${STOLEN_COUNT + ACTIVE_WITH_OPEN_INCIDENT}`,
+  );
 }
 
 main()
