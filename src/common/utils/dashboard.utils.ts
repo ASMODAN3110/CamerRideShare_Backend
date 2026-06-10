@@ -18,8 +18,29 @@ export function previousPeriod(date = new Date()): string {
   return currentPeriod(d);
 }
 
+export const DEFAULT_WEEKLY_VERSEMENT = 15000;
+
 export function startOfMonth(date = new Date()): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+export function endOfMonth(date = new Date()): Date {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+}
+
+/** Nombre de semaines calendaires (lun–dim) touchant le mois. */
+export function weeksInMonth(date = new Date()): number {
+  const start = startOfMonth(date);
+  const end = endOfMonth(date);
+  const weeks = new Set<string>();
+  const cursor = new Date(start);
+
+  while (cursor <= end) {
+    weeks.add(startOfWeek(cursor).toISOString().slice(0, 10));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return weeks.size;
 }
 
 export function startOfWeek(date = new Date()): Date {

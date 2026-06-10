@@ -13,7 +13,7 @@ export class TransactionsController {
   constructor(private readonly transactionsService: TransactionsService) {}
 
   @Get()
-  findRecent(@Query() query: ListTransactionsQueryDto) {
-    return this.transactionsService.findRecent(query);
+  findPaginated(@Query() query: ListTransactionsQueryDto) {
+    return this.transactionsService.findPaginated(query);
   }
 }

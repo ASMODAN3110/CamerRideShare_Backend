@@ -160,6 +160,32 @@ async function main() {
     });
   }
 
+  for (let i = 0; i < 12; i += 1) {
+    const driver = drivers[i % drivers.length];
+    await prisma.payment.create({
+      data: {
+        driverId: driver.id,
+        amount: 10000 + (i % 4) * 2500,
+        type: i % 3 === 0 ? PaymentType.EXPENSE : PaymentType.PAYMENT,
+        status: PaymentStatus.VERIFIED,
+        createdAt: daysAgo(5 + (i % 20)),
+      },
+    });
+  }
+
+  for (let i = 0; i < 13; i += 1) {
+    const driver = drivers[i % drivers.length];
+    await prisma.payment.create({
+      data: {
+        driverId: driver.id,
+        amount: 12000 + (i % 5) * 3000,
+        type: i % 4 === 0 ? PaymentType.EXPENSE : PaymentType.PAYMENT,
+        status: PaymentStatus.PENDING,
+        createdAt: daysAgo(i % 7),
+      },
+    });
+  }
+
   const activeMotos = motos.filter((moto) => moto.status === MotoStatus.ACTIVE);
   const incidentMotos = activeMotos.slice(0, ACTIVE_WITH_OPEN_INCIDENT);
 

@@ -254,6 +254,7 @@ Authorization: Bearer <access_token>
 |---------|----------|-------------|
 | `GET` | `/admin/dashboard/overview` | KPIs aggrégés (flotte, investisseurs, revenu mensuel, statut flotte, trésorerie hebdomadaire). Les `deltaPct` comparent au mois précédent. |
 | `GET` | `/admin/fleet/summary` | KPI page Parc : `total`, `available`, `inMaintenance`, `incidents` (buckets exclusifs) |
+| `GET` | `/admin/payments/summary` | KPI page Paiements : encaissements du mois, objectif, taux de recouvrement, paiements en attente |
 | `GET` | `/admin/alerts?priority=high` | Alertes : paiements en retard (≥ 21 jours sans paiement) et incidents ouverts |
 
 **Définitions `GET /admin/fleet/summary` :**
@@ -265,16 +266,49 @@ Authorization: Bearer <access_token>
 | `incidents` | Motos `STOLEN` **ou** `ACTIVE` avec ≥1 incident `OPEN` lié (`motoId`) — compte de motos, pas de lignes incident |
 | `available` | `total - inMaintenance - incidents` |
 
+**Définitions `GET /admin/payments/summary` :**
+
+| Champ | Calcul |
+|-------|--------|
+| `monthlyCollected` | `SUM(amount)` où `type=PAYMENT`, `status=VERIFIED`, `createdAt` dans le mois courant |
+| `monthlyTarget` | Motos `ACTIVE` avec conducteur × `DEFAULT_WEEKLY_VERSEMENT` (15 000 XAF) × semaines calendaires du mois |
+| `recoveryRatePct` | `round(monthlyCollected / monthlyTarget × 100)` ; `0` si objectif nul ; peut dépasser 100 % |
+| `pendingCount` | Nombre de paiements `status=PENDING` (tous types) |
+
 #### Transactions
 
 | Méthode | Endpoint | Description |
 |---------|----------|-------------|
-| `GET` | `/transactions?limit=10&sort=desc` | Transactions récentes (`limit` max 50, défaut 10) |
+| `GET` | `/transactions` | Liste paginée des transactions (paiements + dépenses) |
+
+Query params : `page` (défaut 1), `limit` (défaut 20, max 50), `sort` (`asc` \| `desc`, défaut `desc`), `search` (nom conducteur ou montant exact), `status` (`VERIFIED` \| `PENDING`), `type` (`PAYMENT` \| `EXPENSE`).
+
+Réponse :
+
+```json
+{
+  "data": [
+    {
+      "id": 12,
+      "driver": { "fullName": "Jean-Paul N.", "avatarUrl": null },
+      "createdAt": "2026-06-02T10:00:00.000Z",
+      "status": "VERIFIED",
+      "type": "PAYMENT",
+      "amount": 15000
+    }
+  ],
+  "meta": { "total": 158, "page": 1, "limit": 20, "totalPages": 8 }
+}
+```
+
+> **Breaking change** : la réponse n'est plus un tableau plat — lire `response.data`.
 
 #### Paiements
 
 | Méthode | Endpoint | Description |
 |---------|----------|-------------|
+| `GET` | `/payments/:id` | Détail d'un paiement (conducteur inclus) |
+| `PATCH` | `/payments/:id` | Met à jour le statut (`VERIFIED` \| `PENDING`) |
 | `POST` | `/payments` | Enregistre un paiement vérifié |
 
 ```json
@@ -286,6 +320,14 @@ Authorization: Bearer <access_token>
 ```
 
 `type` : `"PAYMENT"` (paiement conducteur) ou `"EXPENSE"` (dépense).
+
+**`PATCH /payments/:id` :**
+
+```json
+{ "status": "VERIFIED" }
+```
+
+Statuts supportés en v1 : `VERIFIED`, `PENDING` (pas de `FAILED`).
 
 #### Incidents
 
@@ -350,7 +392,24 @@ curl "http://localhost:3000/motos?page=1&limit=12&city=Douala" \
 curl http://localhost:3000/motos/available \
   -H "Authorization: Bearer $TOKEN"
 
-# 7. Créer un paiement
+# 7. KPI page Paiements
+curl http://localhost:3000/admin/payments/summary \
+  -H "Authorization: Bearer $TOKEN"
+
+# 8. Transactions paginées
+curl "http://localhost:3000/transactions?page=1&limit=20&status=PENDING" \
+  -H "Authorization: Bearer $TOKEN"
+
+# 9. Détail et validation d'un paiement
+curl http://localhost:3000/payments/1 \
+  -H "Authorization: Bearer $TOKEN"
+
+curl -X PATCH http://localhost:3000/payments/1 \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"VERIFIED"}'
+
+# 10. Créer un paiement
 curl -X POST http://localhost:3000/payments \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
@@ -372,6 +431,8 @@ src/
 ├── admin/                        # Dashboard admin (KPIs, alertes)
 │   ├── admin.controller.ts
 │   ├── admin-dashboard.service.ts
+│   ├── fleet-summary.service.ts
+│   ├── payments-summary.service.ts
 │   └── admin.module.ts
 ├── alerts/                       # Alertes (paiements en retard, incidents)
 │   ├── dto/

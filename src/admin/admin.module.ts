@@ -3,10 +3,15 @@ import { AuthModule } from '../auth/auth.module';
 import { AdminController } from './admin.controller';
 import { AdminDashboardService } from './admin-dashboard.service';
 import { FleetSummaryService } from './fleet-summary.service';
+import { PaymentsSummaryService } from './payments-summary.service';
 
 @Module({
   imports: [AuthModule],
   controllers: [AdminController],
-  providers: [AdminDashboardService, FleetSummaryService],
+  providers: [
+    AdminDashboardService,
+    FleetSummaryService,
+    PaymentsSummaryService,
+  ],
 })
 export class AdminModule {}
