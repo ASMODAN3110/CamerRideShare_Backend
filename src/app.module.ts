@@ -11,6 +11,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { IncidentsModule } from './incidents/incidents.module';
 import { InvitationsModule } from './invitations/invitations.module';
 import { MotosModule } from './motos/motos.module';
+import { DriverModule } from './driver/driver.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { MotosModule } from './motos/motos.module';
     IncidentsModule,
     InvitationsModule,
     MotosModule,
+    DriverModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -275,6 +275,45 @@ Authorization: Bearer <access_token>
 | `recoveryRatePct` | `round(monthlyCollected / monthlyTarget × 100)` ; `0` si objectif nul ; peut dépasser 100 % |
 | `pendingCount` | Nombre de paiements `status=PENDING` (tous types) |
 
+#### Investisseurs (page admin `/investisseurs`)
+
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| `GET` | `/admin/investors/summary` | KPIs page Investisseurs + top 4 contributeurs |
+| `GET` | `/admin/investors/roi-trend?months=8` | Série ROI mensuelle (graphique) |
+| `GET` | `/admin/investors` | Liste paginée avec métriques par investisseur |
+
+> `GET /users/investors` reste la liste utilisateurs simple (id, nom, téléphone…) — sans capital, recouvrement ni statut métier.
+
+**Définitions `GET /admin/investors/summary` :**
+
+| Champ | Calcul |
+|-------|--------|
+| `totalCapitalInvested` | `SUM(moto.targetAmount)` où `investorId IS NOT NULL` |
+| `financedMotosCount` | `COUNT(moto)` où `investorId IS NOT NULL` |
+| `totalInvestorsCount` | Utilisateurs `role=INVESTOR` |
+| `activeInvestorsCount` | Investisseurs avec ≥ 1 moto financée |
+| `topContributors` | Top 4 par `recoveryRatePct` desc (`amountInvested > 0`) |
+
+**Métriques par investisseur (`GET /admin/investors`) :**
+
+| Champ | Calcul |
+|-------|--------|
+| `amountInvested` | `SUM(moto.targetAmount)` pour ses motos |
+| `amountRecovered` | `SUM(moto.financedAmount)` pour ses motos |
+| `recoveryRatePct` | `round(amountRecovered / amountInvested × 100)` |
+| `motosCount` | Nombre de motos financées |
+| `zone` | Ville la plus fréquente parmi ses motos (`city`) |
+| `status` | `INACTIVE` (0 moto), `LATE` (conducteur en retard ≥ 21 j), sinon `ACTIVE` |
+
+Query params liste : `page`, `limit` (max 50), `sort` (`asc`|`desc` sur `joinedAt`), `search` (nom), `status` (`ACTIVE`|`LATE`|`INACTIVE`).
+
+**Mapping UI statuts :** actif → `ACTIVE`, retard → `LATE`, inactif → `INACTIVE`.
+
+**ROI trend :** par mois, `avgRoiPct = round(paiements VERIFIED/PAYMENT des conducteurs de motos financées / totalCapitalInvested × 100)`.
+
+> Écart avec le dashboard : `GET /admin/dashboard/overview` compte les investisseurs actifs via `Investment.closedAt = null` ; la page investisseurs utilise la règle **moto-centric** (≥ 1 moto avec `investorId`).
+
 #### Transactions
 
 | Méthode | Endpoint | Description |
@@ -414,6 +453,18 @@ curl -X POST http://localhost:3000/payments \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"driverId":4,"amount":15000,"type":"PAYMENT"}'
+
+# 11. KPI page Investisseurs
+curl http://localhost:3000/admin/investors/summary \
+  -H "Authorization: Bearer $TOKEN"
+
+# 12. Liste investisseurs paginée
+curl "http://localhost:3000/admin/investors?page=1&status=ACTIVE" \
+  -H "Authorization: Bearer $TOKEN"
+
+# 13. Tendance ROI
+curl "http://localhost:3000/admin/investors/roi-trend?months=8" \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ### Données de démonstration
@@ -430,9 +481,14 @@ Compte admin seed : `690000001` / `password123`
 src/
 ├── admin/                        # Dashboard admin (KPIs, alertes)
 │   ├── admin.controller.ts
+│   ├── admin-investors.controller.ts
 │   ├── admin-dashboard.service.ts
 │   ├── fleet-summary.service.ts
 │   ├── payments-summary.service.ts
+│   ├── investors-summary.service.ts
+│   ├── investors-list.service.ts
+│   ├── investors-roi.service.ts
+│   ├── investors-metrics.service.ts
 │   └── admin.module.ts
 ├── alerts/                       # Alertes (paiements en retard, incidents)
 │   ├── dto/

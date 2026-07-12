@@ -26,6 +26,14 @@ function daysAgo(days: number): Date {
   return d;
 }
 
+function monthsAgo(months: number, day = 15): Date {
+  const d = new Date();
+  d.setMonth(d.getMonth() - months);
+  d.setDate(day);
+  d.setHours(12, 0, 0, 0);
+  return d;
+}
+
 async function main() {
   const passwordHash = await bcrypt.hash('password123', 10);
 
@@ -48,18 +56,30 @@ async function main() {
   });
 
   const investors = await Promise.all(
-    [1, 2].map((i) =>
+    [1, 2, 3, 4, 5].map((i) =>
       prisma.user.create({
         data: {
           email: `investor${i}@example.com`,
-          phoneNumber: `69000000${i + 1}`,
-          fullName: `Investisseur ${i}`,
+          phoneNumber: `6900000${i + 1}`,
+          fullName:
+            i === 1
+              ? 'Robert Martin'
+              : i === 2
+                ? 'Marie Kamga'
+                : `Investisseur ${i}`,
           role: UserRole.INVESTOR,
           passwordHash,
+          avatarUrl:
+            i % 2 === 0
+              ? `https://i.pravatar.cc/150?u=investor${i}`
+              : null,
         },
       }),
     ),
   );
+
+  const activeInvestorIds = investors.slice(0, 3).map((inv) => inv.id);
+  const recoveryRatios = [0.84, 0.76, 0.68];
 
   const drivers = await Promise.all(
     [1, 2, 3, 4, 5].map((i) =>
@@ -90,18 +110,27 @@ async function main() {
 
   const motos = [];
   for (let i = 0; i < motoStatuses.length; i += 1) {
-    const driver = drivers[i % drivers.length];
-    const investor = investors[i % investors.length];
+    const investorIndex = i % activeInvestorIds.length;
+    const investorId = activeInvestorIds[investorIndex];
+    const targetAmount = 5000000;
+    const ratio = recoveryRatios[investorIndex];
+    const financedAmount = Math.min(
+      Math.round(targetAmount * ratio * (0.95 + (i % 5) * 0.01)),
+      targetAmount,
+    );
+    const driver =
+      investorIndex === 2 ? drivers[4] : drivers[i % (drivers.length - 1)];
+
     const moto = await prisma.moto.create({
       data: {
         matricule: `LT ${1000 + i} A`,
         model: MOTO_MODELS[i % MOTO_MODELS.length],
         city: CITIES[i % CITIES.length],
         status: motoStatuses[i],
-        financedAmount: 800000 + (i % 5) * 50000,
-        targetAmount: 5000000,
+        financedAmount,
+        targetAmount,
         driverId: driver.id,
-        investorId: investor.id,
+        investorId,
         lastMaintenanceAt: i % 3 === 0 ? daysAgo(10 + (i % 60)) : null,
         imageUrl:
           i % 5 === 0
@@ -115,7 +144,7 @@ async function main() {
   for (let i = 0; i < 20; i += 1) {
     await prisma.investment.create({
       data: {
-        investorId: investors[i % investors.length].id,
+        investorId: investors[i % activeInvestorIds.length].id,
         motoId: motos[i].id,
         amount: 500000 + i * 10000,
         closedAt: i >= 18 ? daysAgo(30) : null,
@@ -123,10 +152,37 @@ async function main() {
     });
   }
 
+  const lateDriver = drivers[4];
+  const payingDrivers = drivers.slice(0, 4);
+
+  for (let month = 0; month < 8; month += 1) {
+    for (const driver of payingDrivers) {
+      await prisma.payment.create({
+        data: {
+          driverId: driver.id,
+          amount: 12000 + month * 1500 + driver.id * 500,
+          type: PaymentType.PAYMENT,
+          status: PaymentStatus.VERIFIED,
+          createdAt: monthsAgo(7 - month, 10 + driver.id),
+        },
+      });
+    }
+  }
+
+  await prisma.payment.create({
+    data: {
+      driverId: lateDriver.id,
+      amount: 15000,
+      type: PaymentType.PAYMENT,
+      status: PaymentStatus.VERIFIED,
+      createdAt: daysAgo(45),
+    },
+  });
+
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  for (const driver of drivers) {
+  for (const driver of payingDrivers) {
     await prisma.payment.create({
       data: {
         driverId: driver.id,
@@ -148,20 +204,8 @@ async function main() {
     });
   }
 
-  for (const driver of drivers.slice(0, 2)) {
-    await prisma.payment.create({
-      data: {
-        driverId: driver.id,
-        amount: 15000,
-        type: PaymentType.PAYMENT,
-        status: PaymentStatus.VERIFIED,
-        createdAt: daysAgo(30),
-      },
-    });
-  }
-
   for (let i = 0; i < 12; i += 1) {
-    const driver = drivers[i % drivers.length];
+    const driver = payingDrivers[i % payingDrivers.length];
     await prisma.payment.create({
       data: {
         driverId: driver.id,
@@ -174,7 +218,7 @@ async function main() {
   }
 
   for (let i = 0; i < 13; i += 1) {
-    const driver = drivers[i % drivers.length];
+    const driver = payingDrivers[i % payingDrivers.length];
     await prisma.payment.create({
       data: {
         driverId: driver.id,
@@ -221,6 +265,7 @@ async function main() {
 
   console.log('Seed completed.');
   console.log(`Admin login: phone 690000001 / password123 (id=${admin.id})`);
+  console.log(`Investors: 5 total (3 with motos, 2 inactive)`);
   console.log(
     `Fleet KPI target: total=${TOTAL_MOTOS}, available=105, inMaintenance=${BROKEN_COUNT}, incidents=${STOLEN_COUNT + ACTIVE_WITH_OPEN_INCIDENT}`,
   );

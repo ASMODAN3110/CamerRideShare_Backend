@@ -7,11 +7,12 @@ import {
   UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { formatDriverName } from '../common/utils/dashboard.utils';
+import {
+  DEFAULT_WEEKLY_VERSEMENT,
+  formatDriverName,
+  OVERDUE_DAYS,
+} from '../common/utils/dashboard.utils';
 import { ListAlertsQueryDto } from './dto/list-alerts-query.dto';
-
-const OVERDUE_DAYS = 21;
-const WEEKLY_PAYMENT_ESTIMATE = 15000;
 
 @Injectable()
 export class AlertsService {
@@ -56,7 +57,7 @@ export class AlertsService {
         location: driver.motosAsDriver[0]?.city ?? '—',
         type: 'PAYMENT_OVERDUE' as const,
         label: '3 semaines de retard',
-        amount: -(WEEKLY_PAYMENT_ESTIMATE * 3),
+        amount: -(DEFAULT_WEEKLY_VERSEMENT * 3),
         avatarUrl: driver.avatarUrl,
       }));
   }

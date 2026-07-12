@@ -19,6 +19,7 @@ export function previousPeriod(date = new Date()): string {
 }
 
 export const DEFAULT_WEEKLY_VERSEMENT = 15000;
+export const OVERDUE_DAYS = 21;
 
 export function startOfMonth(date = new Date()): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1);
