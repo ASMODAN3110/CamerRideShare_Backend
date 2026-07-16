@@ -16,5 +16,5 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
-    command: sh -c "pnpm prisma generate && pnpm prisma db push && pnpm run start:dev"
+    command: sh -c "pnpm prisma generate && pnpm prisma db push && pnpm prisma db seed && pnpm run start:dev"
     restart: unless-stopped

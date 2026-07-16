@@ -78,12 +78,22 @@ PORT=3000
 
 > **En Docker**, l'URL de connexion est automatiquement redirigée vers `host.docker.internal:5432` par Docker Compose. Voir [docker-compose.yml](docker-compose.yml).
 
+### 🪡 Premier admin
+
+Un **compte administrateur** est créé automatiquement au premier démarrage (seed idempotent — sans effet si l'admin existe déjà) :
+
+| Téléphone | Mot de passe | Rôle |
+|-----------|-------------|------|
+| `692100263` | `password123` | `ADMIN` |
+
+> ⚠️ **En production**, modifie ces identifiants dans [prisma/seed.ts](prisma/seed.ts) avant le premier déploiement.
+
 ## 🚀 Lancement du serveur
 
 ### Avec Docker Compose (recommandé)
 
 ```bash
-# Développement (hot-reload)
+# Développement (hot-reload) — le seed s'exécute automatiquement
 docker compose up --build
 
 # Production
@@ -102,16 +112,18 @@ docker run --rm -e PGPASSWORD=<password> postgres:17-alpine \
   psql -h host.docker.internal -U postgres -c "CREATE DATABASE camerrideshare;"
 ```
 
+Le seed est exécuté à chaque démarrage du conteneur, mais il est **idempotent** : si l'admin existe déjà, il ne touche à rien.
+
 ### En local
 
 ```bash
-# Appliquer le schéma Prisma
+# 1. Appliquer le schéma Prisma
 pnpm run db:push
 
-# (Optionnel) Charger les données de démonstration
+# 2. Charger les données de démonstration (idempotent)
 pnpm run db:seed
 
-# Démarrer en mode développement (hot-reload)
+# 3. Démarrer en mode développement (hot-reload)
 pnpm run start:dev
 ```
 
@@ -145,7 +157,7 @@ User ──┬── Moto (driver)     ── Payment
 
 #### POST /auth/register
 
-Crée un nouvel utilisateur.
+Crée un nouvel utilisateur. **Le rôle `ADMIN` est refusé** — seuls les rôles `DRIVER` et `INVESTOR` peuvent s'inscrire via cette route (voir [Création d'un administrateur](#création-dun-administrateur)).
 
 ```json
 {
@@ -210,7 +222,7 @@ Authorization: Bearer <access_token>
 | `GET` | `/users/drivers` | JWT + ADMIN | Liste les chauffeurs (sans `passwordHash`), tri par `fullName` |
 | `GET` | `/users/investors` | JWT + ADMIN | Liste les investisseurs (sans `passwordHash`), tri par `fullName` |
 | `GET` | `/users/:id` | JWT | Récupère un utilisateur par ID |
-| `POST` | `/users` | JWT | Crée un utilisateur |
+| `POST` | `/users` | JWT + ADMIN | Crée un utilisateur (réservé aux administrateurs) |
 | `PATCH` | `/users/:id` | JWT | Met à jour un utilisateur |
 | `DELETE` | `/users/:id` | JWT | Supprime un utilisateur |
 
@@ -559,6 +571,39 @@ src/
 └── main.ts
 ```
 
+## 👑 Administrateurs
+
+### Création du premier admin
+
+Le **premier administrateur** est créé automatiquement par le seed (idempotent) au premier démarrage :
+
+| Champ | Valeur |
+|-------|--------|
+| Téléphone | `692100263` |
+| Mot de passe | `password123` |
+| Email | `abdoulrahimmomo@gmail.com` |
+
+Pour le modifier, édite [prisma/seed.ts](prisma/seed.ts).
+
+### Création d'un admin supplémentaire
+
+Une fois connecté avec un compte admin existant :
+
+```bash
+curl -X POST http://localhost:3000/users \
+  -H "Authorization: Bearer <token_admin>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "nouveladmin@example.com",
+    "phoneNumber": "690009999",
+    "password": "password123",
+    "fullName": "Nouvel Admin",
+    "role": "ADMIN"
+  }'
+```
+
+> ⚠️ Il est **impossible** de s'inscrire en tant qu'`ADMIN` via `POST /auth/register` — cette route publique rejette le rôle `ADMIN` (HTTP 403).
+
 ## 🔒 Sécurité
 
 - **Tokens JWT** : expirés après 1 jour, stockés en variable d'environnement
@@ -566,6 +611,7 @@ src/
 - **Routes protégées** : `@UseGuards(JwtAuthGuard)` pour toute requête authentifiée
 - **Rôles** : `@Roles(UserRole.ADMIN)` combiné à `RolesGuard` pour les routes reservées aux administrateurs
 - **`passwordHash`** : exclu des réponses API GET (champs `select` dédié)
+- **Création ADMIN restreinte** : le rôle `ADMIN` est refusé sur l'inscription publique (`POST /auth/register`). Seul un admin existant peut créer un autre admin via `POST /users`.
 
 ## 🧪 Tests
 

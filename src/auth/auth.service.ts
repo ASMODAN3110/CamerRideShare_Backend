@@ -1,7 +1,7 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
-import { User } from '@prisma/client';
+import { User, UserRole } from '@prisma/client';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
@@ -14,6 +14,11 @@ export class AuthService {
     ) { }
 
     async register(registerDto: RegisterDto): Promise<User> {
+        if (registerDto.role === UserRole.ADMIN) {
+            throw new ForbiddenException(
+                'Impossible de créer un compte ADMIN via cette route. Contactez un administrateur existant.',
+            );
+        }
         return this.usersService.create(registerDto);
     }
 
