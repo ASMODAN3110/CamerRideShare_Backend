@@ -45,6 +45,11 @@ export class PaymentsService {
       include: { driver: driverInclude },
     });
 
+    // 🔁 Mise à jour du financedAmount de la moto du conducteur
+    if (dto.type === PaymentType.PAYMENT) {
+      await this.updateMotoFinancedAmount(dto.driverId, dto.amount);
+    }
+
     return this.toPaymentDetail(payment);
   }
 
@@ -71,6 +76,26 @@ export class PaymentsService {
     });
 
     return this.toPaymentDetail(payment);
+  }
+
+  /**
+   * Ajoute le montant versé au financedAmount de la moto active du conducteur.
+   * Le financedAmount ne peut pas dépasser le targetAmount.
+   */
+  private async updateMotoFinancedAmount(driverId: number, amount: number) {
+    const moto = await this.prisma.moto.findFirst({
+      where: { driverId, status: 'ACTIVE' },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!moto) return; // aucun véhicule actif → rien à mettre à jour
+
+    const newFinanced = Math.min(moto.financedAmount + amount, moto.targetAmount);
+
+    await this.prisma.moto.update({
+      where: { id: moto.id },
+      data: { financedAmount: newFinanced },
+    });
   }
 
   private toPaymentDetail(
